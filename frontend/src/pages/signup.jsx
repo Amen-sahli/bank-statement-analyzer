@@ -1,35 +1,317 @@
 import Button from 'react-bootstrap/Button'
 import Container from 'react-bootstrap/Container'
 import { Link } from 'react-router-dom'
+import { FiUser, FiMail, FiLock, FiArrowRight, FiCheck } from 'react-icons/fi'
 
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --c1: #01161E;
+    --c2: #124559;
+    --c3: #598392;
+    --c4: #AEC3B0;
+    --c5: #EFF6E0;
+  }
+
+  .signup-root {
+    min-height: 100vh;
+    background: var(--c1);
+    display: flex;
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .signup-root::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, #12455940 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .signup-left {
+    width: 480px;
+    background: var(--c2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 50px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .signup-left::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, transparent, var(--c3), transparent);
+  }
+
+  .signup-card { width: 100%; }
+
+  .signup-card h2 {
+    font-family: 'Playfair Display', serif;
+    color: var(--c5);
+    font-size: 2rem;
+    margin-bottom: 6px;
+  }
+
+  .signup-card .subtitle {
+    color: var(--c4);
+    font-size: 0.9rem;
+    font-weight: 300;
+    margin-bottom: 36px;
+  }
+
+  .field-wrapper { margin-bottom: 18px; }
+
+  .field-label {
+    color: var(--c4);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .field-input-wrap { position: relative; }
+
+  .field-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--c3);
+    font-size: 0.95rem;
+  }
+
+  .custom-input {
+    width: 100%;
+    background: #01161e88 !important;
+    border: 1px solid #59839244 !important;
+    border-radius: 10px !important;
+    color: var(--c5) !important;
+    padding: 13px 16px 13px 44px !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 0.95rem !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+  }
+
+  .custom-input::placeholder { color: #598392aa !important; }
+
+  .custom-input:focus {
+    border-color: var(--c3) !important;
+    box-shadow: 0 0 0 3px #59839220 !important;
+    outline: none !important;
+    background: #01161ecc !important;
+  }
+
+  .signup-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--c4), #8fad92) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    color: var(--c1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin-top: 8px;
+    transition: opacity 0.2s, transform 0.15s !important;
+    cursor: pointer;
+  }
+
+  .signup-btn:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .signup-footer {
+    text-align: center;
+    margin-top: 24px;
+    color: var(--c3);
+    font-size: 0.88rem;
+  }
+
+  .signup-footer a {
+    color: var(--c4) !important;
+    text-decoration: none !important;
+    font-weight: 500;
+  }
+
+  .signup-footer a:hover { color: var(--c5) !important; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #59839222;
+    margin: 26px 0;
+  }
+
+  /* Right Panel */
+  .signup-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .signup-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--c4);
+    margin-bottom: 80px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .signup-brand-dot {
+    width: 8px; height: 8px;
+    background: var(--c4);
+    border-radius: 50%;
+  }
+
+  .signup-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem;
+    color: var(--c5);
+    line-height: 1.25;
+    margin-bottom: 40px;
+  }
+
+  .signup-headline span { color: var(--c4); }
+
+  .perks {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .perk-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .perk-icon {
+    width: 32px; height: 32px;
+    background: #59839220;
+    border: 1px solid #59839244;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c4);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .perk-text {
+    color: var(--c3);
+    font-size: 0.92rem;
+    font-weight: 300;
+  }
+
+  @media (max-width: 768px) {
+    .signup-right { display: none; }
+    .signup-left { width: 100%; }
+  }
+`
 
 export default function Signup() {
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="signup-root">
 
+        {/* Left Panel - Form */}
+        <div className="signup-left">
+          <div className="signup-card">
+            <h2>Create account</h2>
+            <p className="subtitle">Start analyzing your finances today</p>
 
-    return(
-        <form  className="d-flex flex-column align-items-center justify-content-center text-white" style={{ minHeight: '100vh' }}>
-            <h1>Signup</h1>
-            <p className='margin-bottom-5'>Welcome to the signup page!</p>
-            <div >
-                <label htmlFor="username">Username :</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username" style={{width:'250px', display:'block', border:'1px  solid #ced4da', borderRadius:'0.375rem', height:'40px'}} />
+            <div className="field-wrapper">
+              <label className="field-label">Username</label>
+              <div className="field-input-wrap">
+                <FiUser className="field-icon" />
+                <input className="custom-input" type="text" placeholder="johndoe" />
+              </div>
             </div>
-            <div className="mt-3">
-                <label htmlFor="email">Email :</label>
-                <input type="email" id="email" name="email" placeholder="example@example.com" style={{width:'250px', display:'block', border:'1px  solid #ced4da', borderRadius:'0.375rem', height:'40px'}} />
+
+            <div className="field-wrapper">
+              <label className="field-label">Email Address</label>
+              <div className="field-input-wrap">
+                <FiMail className="field-icon" />
+                <input className="custom-input" type="email" placeholder="you@example.com" />
+              </div>
             </div>
-            <div className="mt-3 mb-3">
-                <label htmlFor="password">Password :</label>
-                <input type="password" id="password" name="password" placeholder="********" style={{width:'250px', display:'block', border:'1px  solid #ced4da', borderRadius:'0.375rem', height:'40px'}} />
-                <label htmlFor="confirmPassword" className='mt-3'>Confirm Password :</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="********" style={{width:'250px', display:'block', border:'1px  solid #ced4da', borderRadius:'0.375rem', height:'40px'}} />
+
+            <div className="field-wrapper">
+              <label className="field-label">Password</label>
+              <div className="field-input-wrap">
+                <FiLock className="field-icon" />
+                <input className="custom-input" type="password" placeholder="••••••••" />
+              </div>
             </div>
-            <Link to="/dashboard" className="text-decoration-none" style={{ width: '15%', minWidth: '150px' }}>
-                <Button variant="primary" type="submit" className="mt-3 w-100">
-                    Signup
-                </Button>
+
+            <div className="field-wrapper">
+              <label className="field-label">Confirm Password</label>
+              <div className="field-input-wrap">
+                <FiLock className="field-icon" />
+                <input className="custom-input" type="password" placeholder="••••••••" />
+              </div>
+            </div>
+
+            <Link to="/dashboard" className="text-decoration-none">
+              <button className="signup-btn">
+                Create Account <FiArrowRight />
+              </button>
             </Link>
-            <p className='mt-4'>Already have an account? <Link to="/" className="text-decoration-underline">Login here</Link></p>
-        </form>
-    )
+
+            <hr className="divider" />
+
+            <p className="signup-footer">
+              Already have an account? <Link to="/login">Sign in</Link>
+            </p>
+          </div>
+        </div>
+
+        {/* Right Panel - Info */}
+        <div className="signup-right">
+          <div className="signup-brand">
+            <span className="signup-brand-dot" />
+            BankAnalyzer
+          </div>
+          <h1 className="signup-headline">
+            Take control of<br />your <span>financial story.</span>
+          </h1>
+          <div className="perks">
+            {[
+              'Upload CSV or PDF bank statements instantly',
+              'Visualize income vs. expenses over time',
+              'AI-powered categorization & insights',
+              'Secure — your data stays private',
+            ].map((text, i) => (
+              <div className="perk-item" key={i}>
+                <div className="perk-icon"><FiCheck /></div>
+                <span className="perk-text">{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </>
+  )
 }

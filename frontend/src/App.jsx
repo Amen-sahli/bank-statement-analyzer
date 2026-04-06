@@ -3,13 +3,15 @@ import './App.css'
 import Login from './pages/login'
 import Signup from './pages/signup'
 import Dashboard from './pages/dashboard'
+import Homepage from './pages/homepage';
 
 function App() {
   return(
     <>
       <Router>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Homepage />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
