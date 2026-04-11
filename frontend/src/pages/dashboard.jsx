@@ -2,7 +2,7 @@ import '../styles/dashboard.css'
 import DashContent from '../components/Dashboard/DashContent'
 import SideBar from '../components/Dashboard/SideBar'
 import { useState } from 'react'
-
+import Analytics from '../components/Dashboard/Analytics'
 
 export default function Dashboard() {
   
@@ -28,6 +28,7 @@ export default function Dashboard() {
 
           {/* CONTENT */}
           {activeTab === 'Dashboard' && <DashContent />}
+          {activeTab === 'Analytics' && <Analytics />}
           
         </div>
       </div>

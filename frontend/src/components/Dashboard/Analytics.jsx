@@ -1,0 +1,385 @@
+import '../../styles/Analytics.css'
+import { useState } from 'react'
+import {
+  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar,
+  AreaChart, Area,
+} from 'recharts'
+import {
+  FiTrendingUp, FiTrendingDown, FiDollarSign, FiCreditCard,
+  FiCpu, FiChevronRight, FiArrowUp, FiArrowDown, FiStar
+} from 'react-icons/fi'
+
+/* ─── PALETTE ─────────────────────────────────────────── */
+const C = { c1:'#01161E', c2:'#124559', c3:'#598392', c4:'#AEC3B0', c5:'#EFF6E0' }
+const PIE_COLORS = ['#598392','#AEC3B0','#7faab5','#3d6b77','#c9dbc7','#2a4f5e','#8fbfa0']
+
+/* ─── HARD-CODED DATA ─────────────────────────────────── */
+const summaryCards = [
+  { label:'Net Balance',    value:'$8,340',  change:'+12.4%', up:true,  icon:<FiDollarSign/>,  accent:C.c3  },
+  { label:'Total Income',   value:'$14,200', change:'+8.2%',  up:true,  icon:<FiTrendingUp/>,  accent:C.c4  },
+  { label:'Total Expenses', value:'$5,860',  change:'+3.1%',  up:false, icon:<FiTrendingDown/>,accent:'#e07070'},
+  { label:'Avg. Daily Spend',value:'$194',   change:'-5.6%',  up:true,  icon:<FiCreditCard/>,  accent:C.c4  },
+]
+
+const pieData = [
+  { name:'Food & Dining',   value:1420 },
+  { name:'Housing',         value:1800 },
+  { name:'Transport',       value:540  },
+  { name:'Entertainment',   value:320  },
+  { name:'Health',          value:480  },
+  { name:'Shopping',        value:760  },
+  { name:'Utilities',       value:340  },
+]
+
+const spendingLine = [
+  { month:'Oct', spending:3200, budget:4000 },
+  { month:'Nov', spending:4100, budget:4000 },
+  { month:'Dec', spending:5200, budget:4000 },
+  { month:'Jan', spending:3800, budget:4200 },
+  { month:'Feb', spending:3100, budget:4200 },
+  { month:'Mar', spending:4600, budget:4200 },
+  { month:'Apr', spending:2900, budget:4200 },
+]
+
+const categoryBar = [
+  { category:'Food',    spent:1420, avg:1100 },
+  { category:'Housing', spent:1800, avg:1800 },
+  { category:'Transport',spent:540, avg:650  },
+  { category:'Health',  spent:480, avg:400  },
+  { category:'Shopping',spent:760, avg:900  },
+  { category:'Utils',   spent:340, avg:300  },
+]
+
+const incomeVsExpenses = [
+  { month:'Oct', income:3800, expenses:3200 },
+  { month:'Nov', income:4200, expenses:4100 },
+  { month:'Dec', income:4200, expenses:5200 },
+  { month:'Jan', income:5100, expenses:3800 },
+  { month:'Feb', income:4200, expenses:3100 },
+  { month:'Mar', income:4200, expenses:4600 },
+  { month:'Apr', income:4200, expenses:2900 },
+]
+
+const topTransactions = [
+  { desc:'Rent Payment',       amount:-1800, category:'Housing',      date:'Apr 01' },
+  { desc:'Freelance Project',  amount:+3200, category:'Income',       date:'Apr 03' },
+  { desc:'Grocery — Carrefour',amount:-310,  category:'Food',         date:'Apr 05' },
+  { desc:'Salary',             amount:+4200, category:'Income',       date:'Apr 05' },
+  { desc:'Apple Subscription', amount:-49,   category:'Entertainment',date:'Apr 07' },
+  { desc:'Electricity Bill',   amount:-180,  category:'Utilities',    date:'Apr 08' },
+]
+
+const insights = [
+  { type:'warning', title:'High dining spend',        body:'You spent 29% more on Food & Dining this month compared to your 3-month average. Consider meal prepping to reduce costs.',        icon:'🍽️' },
+  { type:'positive',title:'Great savings rate',       body:'Your net savings rate this month is 38.6%, well above the recommended 20%. Keep up the momentum!',                               icon:'🏆' },
+  { type:'tip',     title:'Subscription audit',       body:'You have 6 active recurring subscriptions totaling $214/mo. Review them — canceling 1–2 unused ones could save ~$600/year.',   icon:'🔄' },
+  { type:'warning', title:'December overspend',       body:'December expenses exceeded your budget by $1,200, primarily in Shopping & Entertainment. Plan ahead for seasonal spending.',     icon:'📅' },
+]
+
+/* ─── CHART THEME HELPERS ────────────────────────────── */
+const gridProps   = { stroke:'#59839215', strokeDasharray:'4 4' }
+const axisProps   = { tick:{ fill:C.c3, fontSize:11, fontFamily:'DM Sans' }, axisLine:false, tickLine:false }
+const tooltipStyle = {
+  contentStyle:{ background:C.c2, border:`1px solid #59839230`, borderRadius:10, fontFamily:'DM Sans', color:C.c5 },
+  labelStyle:  { color:C.c4, fontWeight:500 },
+  itemStyle:   { color:C.c5 },
+}
+
+/* ─── CUSTOM PIE LABEL ───────────────────────────────── */
+const PieLabel = ({ cx, cy, midAngle, outerRadius, percent }) => {
+  if (percent < 0.05) return null
+  const RADIAN = Math.PI / 180
+  const r = outerRadius + 20
+  const x = cx + r * Math.cos(-midAngle * RADIAN)
+  const y = cy + r * Math.sin(-midAngle * RADIAN)
+  return (
+    <text x={x} y={y} fill={C.c4} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central"
+      style={{ fontSize:11, fontFamily:'DM Sans' }}>
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  )
+}
+
+
+/* ─── AI INSIGHTS WIDGET ─────────────────────────────── */
+function AIInsights() {
+  const [status, setStatus]   = useState('idle') // idle | loading | done | error
+  const [aiText, setAiText]   = useState([])
+
+  const generate = async () => {
+    setStatus('loading')
+    setAiText([])
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: `You are a personal finance analyst. Given the following bank statement summary, generate exactly 4 concise financial insights. Return ONLY a valid JSON array — no markdown, no explanation, no backticks.
+
+Data:
+- Net balance: $8,340
+- Total income: $14,200 (salary $8,400 + freelance $5,800)
+- Total expenses: $5,860
+- Top expense categories: Housing $1,800, Food $1,420, Shopping $760, Health $480, Transport $540, Entertainment $320, Utilities $340
+- Savings rate: 38.6%
+- Dec had a budget overspend of $1,200
+- 6 active subscriptions totaling $214/mo
+- Spending trend: decreased last 2 months
+
+Format each item as: { "type": "positive"|"warning"|"tip", "icon": "<single emoji>", "title": "<short title>", "body": "<2 sentence insight>" }`
+          }],
+        }),
+      })
+      const data = await res.json()
+      const raw = data.content?.map(b => b.text || '').join('') || '[]'
+      const clean = raw.replace(/```json|```/g, '').trim()
+      setAiText(JSON.parse(clean))
+      setStatus('done')
+    } catch (e) {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <div className="an-chart-card" style={{ height: '100%' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+        <div className="an-chart-title">Smart Insights</div>
+        <div className="an-ai-badge">
+          <span className="an-ai-dot" />
+          AI-Powered
+        </div>
+      </div>
+      <div className="an-chart-sub">Generated by Claude from your statement data</div>
+
+      {status === 'idle' && (
+        <>
+          {insights.map((ins, i) => (
+            <div key={i} className={`an-insight-card ${ins.type}`}>
+              <span className="an-insight-emoji">{ins.icon}</span>
+              <div>
+                <div className="an-insight-title">{ins.title}</div>
+                <div className="an-insight-body">{ins.body}</div>
+              </div>
+            </div>
+          ))}
+          <button className="an-gen-btn" onClick={generate}>
+            <FiCpu size={14} /> Regenerate with AI
+          </button>
+        </>
+      )}
+
+      {status === 'loading' && (
+        <div className="an-ai-loading">
+          {[1,2,3,4].map(i => <div key={i} className="an-skeleton" style={{ animationDelay:`${i*0.15}s` }} />)}
+          <div style={{ textAlign:'center', color:C.c3, fontSize:'0.8rem', marginTop:4 }}>
+            Analyzing your finances…
+          </div>
+        </div>
+      )}
+
+      {status === 'done' && (
+        <>
+          {aiText.map((ins, i) => (
+            <div key={i} className={`an-insight-card ${ins.type}`}>
+              <span className="an-insight-emoji">{ins.icon}</span>
+              <div>
+                <div className="an-insight-title">{ins.title}</div>
+                <div className="an-insight-body">{ins.body}</div>
+              </div>
+            </div>
+          ))}
+          <button className="an-gen-btn" onClick={generate}>
+            <FiCpu size={14} /> Refresh Insights
+          </button>
+        </>
+      )}
+
+      {status === 'error' && (
+        <div style={{ color:'#e07070', fontSize:'0.85rem', textAlign:'center', padding:'20px 0' }}>
+          Failed to load AI insights. Check your API key setup.
+          <br />
+          <button className="an-gen-btn" onClick={generate} style={{ marginTop:12 }}>
+            Try again
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── MAIN COMPONENT ─────────────────────────────────── */
+export default function Analytics() {
+  return (
+    <>
+      <div className="an-root">
+
+        {/* Page heading */}
+        <div className="an-section-head">
+          <h2>Analytics Overview</h2>
+          <p>April 2026 · Based on uploaded statement</p>
+        </div>
+
+        {/* ── Summary cards ── */}
+        <div className="an-summary-grid">
+          {summaryCards.map((c, i) => (
+            <div className="an-card" key={i}>
+              <div className="an-card-accent" style={{ background:`linear-gradient(90deg,${c.accent},transparent)` }} />
+              <div className="an-card-icon" style={{ color: c.accent }}>{c.icon}</div>
+              <div className="an-card-label">{c.label}</div>
+              <div className="an-card-value">{c.value}</div>
+              <div className={`an-card-change ${c.up ? 'up' : 'down'}`}>
+                {c.up ? <FiArrowUp size={11}/> : <FiArrowDown size={11}/>}
+                {c.change} vs last month
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Row 1: Pie + Line ── */}
+        <div className="an-charts-grid">
+
+          {/* Pie — Expense by Category */}
+          <div className="an-chart-card">
+            <div className="an-chart-title">Expenses by Category</div>
+            <div className="an-chart-sub">Breakdown of where your money went</div>
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%" cy="50%"
+                  innerRadius={60} outerRadius={90}
+                  paddingAngle={3}
+                  dataKey="value"
+                  labelLine={false}
+                  label={PieLabel}
+                >
+                  {pieData.map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="none" />
+                  ))}
+                </Pie>
+                <Tooltip {...tooltipStyle} formatter={(v) => [`$${v}`, 'Amount']} />
+                <Legend
+                  iconType="circle" iconSize={8}
+                  formatter={(v) => <span style={{ color:C.c4, fontSize:11, fontFamily:'DM Sans' }}>{v}</span>}
+                  wrapperStyle={{ paddingTop:12 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Line — Spending over time */}
+          <div className="an-chart-card">
+            <div className="an-chart-title">Spending Over Time</div>
+            <div className="an-chart-sub">Monthly spend vs. budget (Oct – Apr)</div>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={spendingLine} margin={{ top:5, right:10, left:-10, bottom:0 }}>
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="month" {...axisProps} />
+                <YAxis {...axisProps} tickFormatter={v=>`$${(v/1000).toFixed(1)}k`} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [`$${v}`, '']} />
+                <Line type="monotone" dataKey="spending" stroke={C.c3} strokeWidth={2.5}
+                  dot={{ r:4, fill:C.c3, strokeWidth:0 }} activeDot={{ r:6 }} name="Spending" />
+                <Line type="monotone" dataKey="budget" stroke={C.c4} strokeWidth={1.5}
+                  strokeDasharray="5 4" dot={false} name="Budget" />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="an-legend">
+              <div className="an-legend-item"><div className="an-legend-dot" style={{ background:C.c3 }}/>Spending</div>
+              <div className="an-legend-item"><div className="an-legend-dot" style={{ background:C.c4 }}/>Budget</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Row 2: Bar + Area (full width each) ── */}
+        <div className="an-charts-grid" style={{ marginBottom:20 }}>
+
+          {/* Bar — Category comparison */}
+          <div className="an-chart-card">
+            <div className="an-chart-title">Category Comparison</div>
+            <div className="an-chart-sub">Your spend vs. your personal average</div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={categoryBar} margin={{ top:5, right:10, left:-10, bottom:0 }} barCategoryGap="30%">
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="category" {...axisProps} />
+                <YAxis {...axisProps} tickFormatter={v=>`$${v}`} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [`$${v}`, '']} />
+                <Bar dataKey="spent" fill={C.c3}  radius={[5,5,0,0]} name="Spent"   />
+                <Bar dataKey="avg"   fill={C.c4+'60'} radius={[5,5,0,0]} name="Avg" />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="an-legend">
+              <div className="an-legend-item"><div className="an-legend-dot" style={{ background:C.c3 }}/>This month</div>
+              <div className="an-legend-item"><div className="an-legend-dot" style={{ background:C.c4+'80' }}/>Your average</div>
+            </div>
+          </div>
+
+          {/* Area — Income vs Expenses */}
+          <div className="an-chart-card">
+            <div className="an-chart-title">Income vs. Expenses</div>
+            <div className="an-chart-sub">6-month cash flow overview</div>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={incomeVsExpenses} margin={{ top:5, right:10, left:-10, bottom:0 }}>
+                <defs>
+                  <linearGradient id="incGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={C.c4} stopOpacity={0.25}/>
+                    <stop offset="95%" stopColor={C.c4} stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#e07070" stopOpacity={0.25}/>
+                    <stop offset="95%" stopColor="#e07070" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="month" {...axisProps} />
+                <YAxis {...axisProps} tickFormatter={v=>`$${(v/1000).toFixed(1)}k`} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [`$${v}`, '']} />
+                <Area type="monotone" dataKey="income"   stroke={C.c4}    strokeWidth={2}
+                  fill="url(#incGrad)" name="Income"   />
+                <Area type="monotone" dataKey="expenses" stroke="#e07070" strokeWidth={2}
+                  fill="url(#expGrad)" name="Expenses" />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div className="an-legend">
+              <div className="an-legend-item"><div className="an-legend-dot" style={{ background:C.c4 }}/>Income</div>
+              <div className="an-legend-item"><div className="an-legend-dot" style={{ background:'#e07070' }}/>Expenses</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Bottom row: Top Transactions + AI Insights ── */}
+        <div className="an-bottom-grid">
+
+          {/* Top Transactions */}
+          <div className="an-chart-card">
+            <div className="an-chart-title">Top Transactions</div>
+            <div className="an-chart-sub">Highest-value movements this month</div>
+            {topTransactions.map((tx, i) => (
+              <div className="an-tx-item" key={i}>
+                <div className={`an-tx-icon ${tx.amount > 0 ? 'pos' : 'neg'}`}>
+                  {tx.amount > 0 ? <FiArrowUp size={13}/> : <FiArrowDown size={13}/>}
+                </div>
+                <div className="an-tx-info">
+                  <div className="an-tx-desc">{tx.desc}</div>
+                  <div className="an-tx-meta">{tx.category} · {tx.date}</div>
+                </div>
+                <div className={`an-tx-amount ${tx.amount > 0 ? 'pos' : 'neg'}`}>
+                  {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('en-US', { style:'currency', currency:'USD' })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* AI Insights */}
+          <AIInsights />
+
+        </div>
+      </div>
+    </>
+  )
+}
