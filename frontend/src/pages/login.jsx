@@ -1,9 +1,30 @@
 import { Link } from 'react-router-dom'
 import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi'
 import "../styles/login.css"
-
+import { loginUser } from '../api/auth'
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
+  const navigate = useNavigate();
+  async function handleLogin(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const username = formData.get("email");
+    const password = formData.get("password");
+
+    try {
+      const data = await loginUser(username, password);
+
+      localStorage.setItem("token", data.access);
+      alert("Login successful!");
+
+      navigate("/dashboard");
+
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
   return (
     <> 
       <div className="login-root">
@@ -28,6 +49,7 @@ export default function Login() {
         {/* Right Panel */}
         <div className="login-right">
           <div className="login-card">
+            <form onSubmit={handleLogin}>
             <h2>Welcome back</h2>
             <p className="subtitle">Sign in to your account</p>
 
@@ -35,7 +57,7 @@ export default function Login() {
               <label className="field-label">Email Address</label>
               <div className="field-input-wrap">
                 <FiMail className="field-icon" />
-                <input className="custom-input" type="email" placeholder="you@example.com" />
+                <input className="custom-input" type="email"  name='email' placeholder="you@example.com" />
               </div>
             </div>
 
@@ -43,21 +65,19 @@ export default function Login() {
               <label className="field-label">Password</label>
               <div className="field-input-wrap">
                 <FiLock className="field-icon" />
-                <input className="custom-input" type="password" placeholder="••••••••" />
+                <input className="custom-input"  name='password' type="password" placeholder="••••••••" />
               </div>
             </div>
-
-            <Link to="/dashboard" className="text-decoration-none">
-              <button className="login-btn">
+              <button className="login-btn" type="submit">
                 Sign In <FiArrowRight />
               </button>
-            </Link>
 
             <hr className="divider" />
 
             <p className="login-footer">
               Don't have an account? <Link to="/signup">Create one</Link>
             </p>
+            </form>
           </div>
         </div>
       </div>

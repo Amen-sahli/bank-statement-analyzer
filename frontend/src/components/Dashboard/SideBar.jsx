@@ -1,7 +1,16 @@
 import { FiHome, FiBarChart2, FiSettings, FiLogOut} from 'react-icons/fi'
 import {Link} from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 export default function SideBar({ activeTab, setActiveTab }) {
+
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    navigate("/");
+  }
+
   
     return(
         <aside className="db-sidebar">
@@ -33,10 +42,10 @@ export default function SideBar({ activeTab, setActiveTab }) {
                 <div className="sidebar-user-role">Free plan</div>
               </div>
             </div>
-            <Link to="/" className="sidebar-item">
+            <a href="#" className="sidebar-item" onClick={handleLogout}>
               <span className="sidebar-item-icon"><FiLogOut /></span>
               Logout
-            </Link>
+            </a>
           </div>
         </aside>
     )
