@@ -16,10 +16,15 @@ class RegisterView(generics.CreateAPIView):
 # LOGIN
 class LoginView(APIView):
     def post(self, request):
-        username = request.data.get("username")
+        email = request.data.get("email")
         password = request.data.get("password")
 
-        user = authenticate(username=username, password=password)
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=400)
+
+        user = authenticate(username=user.username, password=password)
 
         if user is not None:
             refresh = RefreshToken.for_user(user)

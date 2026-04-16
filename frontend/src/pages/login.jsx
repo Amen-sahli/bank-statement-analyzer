@@ -3,17 +3,25 @@ import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi'
 import "../styles/login.css"
 import { loginUser } from '../api/auth'
 import { useNavigate } from "react-router-dom";
+import { useState } from 'react';
 
 export default function Login() {
+
+  const [error, setError] = useState("");
+
   const navigate = useNavigate();
   async function handleLogin(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const username = formData.get("email");
+    const email = formData.get("email");
     const password = formData.get("password");
 
+    if (formVerification(email, password)) {
+      return;
+    }
+
     try {
-      const data = await loginUser(username, password);
+      const data = await loginUser(email, password);
 
       localStorage.setItem("token", data.access);
       alert("Login successful!");
@@ -21,9 +29,21 @@ export default function Login() {
       navigate("/dashboard");
 
     } catch (error) {
-      alert(error.message);
+      setError(error.message);
     }
   };
+
+  function formVerification(email, password) {
+    let error = ""; 
+    if (!email || !password) {
+      error += "Please fill in all fields. \n";
+    }
+    if (password.length < 8 && password.length > 0) {
+      error += "Password must be at least 8 characters long.";
+    }
+    setError(error);
+    return error.length > 0;
+  }
 
   return (
     <> 
@@ -68,10 +88,13 @@ export default function Login() {
                 <input className="custom-input"  name='password' type="password" placeholder="••••••••" />
               </div>
             </div>
+
+              {error && <p style={{ whiteSpace: 'pre-line', color: '#ff4d4d',textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>{error}</p>}
+              
               <button className="login-btn" type="submit">
                 Sign In <FiArrowRight />
               </button>
-
+            
             <hr className="divider" />
 
             <p className="login-footer">
